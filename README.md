@@ -18,7 +18,7 @@ This GitHub repository is written following the functional programming paradigm.
 Create a new environment if wanted. Then you can install the rastertools by writing the following in your terminal. 
 
 ```bash
-git clone https://github.com/yellowchocobo/rastertools.git
+git clone https://github.com/astroNils/rastertools.git
 cd rastertools
 python3 -m pip install --index-url https://test.pypi.org/simple/ --no-deps rastertools_BOULDERING
 pip install -r requirements.txt
