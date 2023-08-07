@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: rastertools-BOULDERING
-Version: 0.0.5
+Version: 0.0.6
 Summary: Rastertools is a package that gathers a collection of tools to manipulate and extract metadata from rasters.
 Author-email: "Nils C. Prieur" <prieur.nils@gmail.com>
 License: MIT License
@@ -25,13 +25,14 @@ License: MIT License
         OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
         SOFTWARE.
         
-Project-URL: Homepage, https://github.com/yellowchocobo/rastertools
-Project-URL: Bug Tracker, https://github.com/yellowchocobo/rastertools/issues
+Project-URL: Homepage, https://github.com/astroNils/rastertools
+Project-URL: Bug Tracker, https://github.com/astroNils/rastertools/issues
 Classifier: Programming Language :: Python :: 3
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
 Requires-Python: >=3.9
 Description-Content-Type: text/markdown
+License-File: LICENSE
 License-File: LICENSE.txt
 
 # rastertools_BOULDERING
@@ -54,7 +55,7 @@ This GitHub repository is written following the functional programming paradigm.
 Create a new environment if wanted. Then you can install the rastertools by writing the following in your terminal. 
 
 ```bash
-git clone https://github.com/yellowchocobo/rastertools.git
+git clone https://github.com/astroNils/rastertools.git
 cd rastertools
 python3 -m pip install --index-url https://test.pypi.org/simple/ --no-deps rastertools_BOULDERING
 pip install -r requirements.txt
