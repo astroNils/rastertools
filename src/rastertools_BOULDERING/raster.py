@@ -301,6 +301,12 @@ def true_footprint(in_raster, out_shapefile):
     array = array.astype('uint8')
     polygonize(in_raster, array, mask_array, out_shapefile)
 
+    # for cases where you have blobs of NaN within the raster.
+    gdf = gpd.read_file(out_shapefile)
+    gdf = gpd.GeoDataFrame(geometry=[gdf_true_footprint.unary_union.convex_hull], crs=gdf_true_footprint.crs)
+    gdf.to_file(out_shapefile)
+
+
 def footprint(in_raster, out_shapefile):
     """
     Extract footprint of the raster (including the nodata).
