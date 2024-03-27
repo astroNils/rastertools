@@ -301,10 +301,12 @@ def true_footprint(in_raster, out_shapefile):
     array = array.astype('uint8')
     polygonize(in_raster, array, mask_array, out_shapefile)
 
-    # for cases where you have blobs of NaN within the raster.
+    # For cases where you have blobs of NaN within the raster.
+    in_meta = raster_metadata.get_profile(in_raster)
     gdf = gpd.read_file(out_shapefile)
-    gdf = gpd.GeoDataFrame(geometry=[gdf_true_footprint.unary_union.convex_hull], crs=gdf_true_footprint.crs)
+    gdf = gpd.GeoDataFrame(geometry=[gdf.unary_union.convex_hull], crs=in_meta["crs"].to_wkt())
     gdf.to_file(out_shapefile)
+    return gdf
 
 
 def footprint(in_raster, out_shapefile):

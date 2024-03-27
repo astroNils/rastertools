@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
-Name: rastertools-BOULDERING
-Version: 0.0.6
+Name: rastertools_BOULDERING
+Version: 1.0.0
 Summary: Rastertools is a package that gathers a collection of tools to manipulate and extract metadata from rasters.
 Author-email: "Nils C. Prieur" <prieur.nils@gmail.com>
 License: MIT License
