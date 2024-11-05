@@ -8,12 +8,20 @@ import rastertools_BOULDERING.metadata as raster_metadata
 
 def normalize_uint8(in_raster, out_raster):
     """
-    Min-Max Normalization and conversion to byte. This is equivalent to
-    gdal_translate -ot Byte -scale -a_nodata 0 src_dataset dst_dataset
-    but it is better as you can drop the no_data equal to 0.
-    :param in_raster: path to in_raster (str or Path)
-    :param out_raster:path to out_raster (str or Path)
-    :return:
+    Perform Min-Max Normalization and convert to 8-bit unsigned integer format.
+
+    Parameters
+    ----------
+    in_raster : str or Path
+        Path to input raster file.
+    out_raster : str or Path
+        Path to output raster file.
+
+    Notes
+    -----
+    This is equivalent to gdal_translate -ot Byte -scale -a_nodata 0,
+    but provides better handling of zero no-data values.
+    For float32 inputs, values less than 0 are set to 0 before normalization.
     """
     array = raster.read(in_raster)
     out_meta = raster_metadata.get_profile(in_raster)
@@ -32,10 +40,20 @@ def normalize_uint8(in_raster, out_raster):
 
 def rgb_to_grayscale(in_raster, out_raster):
     """
-    Convert RGB or RGBA raster to grayscale (1-band).
-    :param in_raster: path to in_raster (Path)
-    :param out_raster: path to out_raster (Path)
-    :return:
+    Convert RGB or RGBA raster to single-band grayscale.
+
+    Parameters
+    ----------
+    in_raster : str or Path
+        Path to input RGB(A) raster file.
+    out_raster : str or Path, optional
+        Path to output grayscale raster file. If None, appends '_grayscale'
+        to input filename.
+
+    Notes
+    -----
+    Uses PIL's "L" mode conversion which applies the formula:
+    L = 0.299R + 0.587G + 0.114B
     """
     in_raster = Path(in_raster)
     array = Image.open(in_raster).convert("L")
@@ -55,9 +73,16 @@ def rgb_to_grayscale(in_raster, out_raster):
 
 def rgb_fake_batch(folder):
     """
-    Convert all png images in a folder to fake RGB png images.
-    :param folder: path to folder (str or Path).
-    :return:
+    Convert all PNG images in a folder to fake RGB PNG images.
+
+    Parameters
+    ----------
+    folder : str or Path
+        Path to directory containing PNG images to convert.
+
+    Notes
+    -----
+    Creates new files with '_fakergb' suffix in the same directory.
     """
     folder = Path(folder)
     for in_raster in folder.glob('*.png'):
@@ -65,10 +90,14 @@ def rgb_fake_batch(folder):
 
 def tiff_to_png_batch(folder, is_hirise=False):
     """
-    Convert all tif images in a folder to png images (1-band).
-    :param folder: path to folder (str or Path).
-    :param is_hirise: if True, convert to uint8.
-    :return:
+    Convert all TIFF images in a folder to PNG format.
+
+    Parameters
+    ----------
+    folder : str or Path
+        Path to directory containing TIFF images.
+    is_hirise : bool, optional
+        If True, applies HiRISE-specific scaling. Default is False.
     """
     folder = Path(folder)
     for in_raster in folder.glob('*.tif'):
@@ -76,11 +105,17 @@ def tiff_to_png_batch(folder, is_hirise=False):
 
 def tiff_to_png(in_raster, out_png=False, is_hirise=False):
     """
-    Convert tif image to png image (1-band).
-    :param in_raster: path to raster (str or Path)
-    :param out_png: path to output png (str or Path)
-    :param is_hirise: if True, convert to uint8.
-    :return:
+    Convert a TIFF image to PNG format.
+
+    Parameters
+    ----------
+    in_raster : str or Path
+        Path to input TIFF file.
+    out_png : str or Path, optional
+        Path to output PNG file. If False, creates file with same name
+        but .png extension.
+    is_hirise : bool, optional
+        If True, applies HiRISE-specific scaling (255/1023). Default is False.
     """
     in_raster = Path(in_raster)
     png = in_raster.with_name(in_raster.name.split(".tif")[0] + ".png")
@@ -99,10 +134,14 @@ def tiff_to_png(in_raster, out_png=False, is_hirise=False):
 
 def fake_RGB(in_raster, out_raster=None):
     """
-    Convert 1-band raster to a fake 3-band raster (duplicates the same band).
-    :param in_raster: path to in_raster.
-    :param out_raster: path to out_raster.
-    :return:
+    Convert single-band raster to fake RGB by duplicating the band.
+
+    Parameters
+    ----------
+    in_raster : str or Path
+        Path to input single-band raster.
+    out_raster : str or Path, optional
+        Path to output RGB raster. If None, appends '_fakergb' to input filename.
     """
     in_raster = Path(in_raster)
     array = Image.open(in_raster).convert("RGB")
@@ -114,13 +153,24 @@ def fake_RGB(in_raster, out_raster=None):
 
 def pix2world(in_raster, row, col, dst_crs=None):
     """
-    Convert pixel (row, col) to world coordinates (x,y). if to_crs
-    is specified, x and y are projected to specified to the new coord sys.
-    :param in_raster: path to in_raster.
-    :param row: row (int).
-    :param col: col (int).
-    :param dst_crs: coordinate system (proj4 or wkt string).
-    :return:
+    Convert pixel coordinates to world coordinates.
+
+    Parameters
+    ----------
+    in_raster : str or Path
+        Path to input raster file.
+    row : int
+        Row coordinate (pixel).
+    col : int
+        Column coordinate (pixel).
+    dst_crs : str, optional
+        Target coordinate reference system (proj4 or WKT string).
+        If None, returns coordinates in raster's CRS.
+
+    Returns
+    -------
+    tuple
+        (x, y) world coordinates in the target CRS.
     """
     with rio.open(in_raster) as rio_dataset:
         crs_in_raster= rio_dataset.crs.to_wkt()
@@ -136,13 +186,24 @@ def pix2world(in_raster, row, col, dst_crs=None):
 
 def world2pix(in_raster, x, y, from_crs=None):
     """
-    Convert world coordinates (x,y) to pixel (row, col).
-    :param in_raster:
-    :param x: x coordinates in coord of sys of in_raster or in_crs.
-    :param y: y coordinates in coord of sys of in_raster or in_crs.
-    :param from_crs: if specified, the input x and y are in different crs than
-    in_raster_crs (proj4 or wkt string).
-    :return:
+    Convert world coordinates to pixel coordinates.
+
+    Parameters
+    ----------
+    in_raster : str or Path
+        Path to input raster file.
+    x : float
+        X coordinate in world space.
+    y : float
+        Y coordinate in world space.
+    from_crs : str, optional
+        Source coordinate reference system (proj4 or WKT string).
+        If None, assumes coordinates are in raster's CRS.
+
+    Returns
+    -------
+    tuple
+        (row, col) pixel coordinates.
     """
     with rio.open(in_raster) as rio_dataset:
         crs_in_raster = rio_dataset.crs.to_wkt()

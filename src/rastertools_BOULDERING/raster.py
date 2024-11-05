@@ -18,18 +18,26 @@ import rastertools_BOULDERING.convert as raster_convert
 import rastertools_BOULDERING.misc as raster_misc
 
 def read(in_raster, bands=None, bbox=None, as_image=False):
-    """Read a raster. If bbox is specified, then only the specified bbox
-    within the raster is read.
+    """
+    Read a raster file into a NumPy array.
 
     Parameters
     ----------
-    raster : path,
-        absolute path to raster.
-    bands : list of int or int. optional
-        band(s) to read (remember band count starts from 1)
-    bbox : list of int, optional
-        bounding box of an area within the raster [xmin, ymin, xmax, ymax]
-    as_image : boolean, optional
+    in_raster : str or Path
+        Path to the input raster file.
+    bands : int or list of int, optional
+        Band(s) to read (band count starts from 1). If None, all bands are read.
+    bbox : list or rasterio.windows.Window, optional
+        Either a bounding box [xmin, ymin, xmax, ymax] or a rasterio Window object
+        defining the area to read.
+    as_image : bool, optional
+        If True, reshapes the array to (rows, cols, bands) format.
+        If False (default), keeps (bands, rows, cols) format.
+
+    Returns
+    -------
+    ndarray
+        The raster data as a NumPy array.
     """
 
     with rio.open(in_raster) as rio_dataset:
@@ -71,6 +79,22 @@ def read(in_raster, bands=None, bbox=None, as_image=False):
         return (array)
 
 def save(fpath, arr, profile, is_image=True):
+    """
+    Save a NumPy array as a raster file.
+
+    Parameters
+    ----------
+    fpath : str or Path
+        Output file path.
+    arr : ndarray
+        Array to save as raster.
+    profile : dict
+        Rasterio profile containing metadata.
+    is_image : bool, optional
+        If True (default), assumes array is in (rows, cols, bands) format and 
+        reshapes to (bands, rows, cols) before saving.
+        If False, assumes array is already in (bands, rows, cols) format.
+    """
     with rio.open(fpath, "w", **profile) as dst:
         if is_image:
             dst.write(reshape_as_raster(arr))
@@ -78,14 +102,18 @@ def save(fpath, arr, profile, is_image=True):
             dst.write(arr)
 
 def clip_from_bbox(in_raster, bbox, out_raster):
-    
     """
-    Clip a raster using the specified bounding box .
-    
-    :param raster: path to in_raster (str or Path)
-    :param bbox: bounding box [xmin, ymin, xmax, ymax]
-    :param out_raster: path to out_raster (str or Path)
-    :returns:
+    Clip a raster using a bounding box.
+
+    Parameters
+    ----------
+    in_raster : str or Path
+        Path to input raster.
+    bbox : list or rasterio.windows.Window
+        Either a bounding box [xmin, ymin, xmax, ymax] or a rasterio Window object
+        defining the clip area.
+    out_raster : str or Path
+        Path to output clipped raster.
     """
     
     with rio.open(in_raster) as rio_dataset:
@@ -139,11 +167,16 @@ def clip_from_bbox(in_raster, bbox, out_raster):
 
 def clip_from_polygon(in_raster, in_polygon, out_raster):
     """
+    Clip a raster using a polygon shapefile.
 
-    :param in_raster: path to in_raster (str or Path)
-    :param in_polygon: path to polygon shapefile (str or Path)
-    :param out_raster: path to out_raster (str or Path)
-    :return:
+    Parameters
+    ----------
+    in_raster : str or Path
+        Path to input raster.
+    in_polygon : str or Path
+        Path to input polygon shapefile.
+    out_raster : str or Path
+        Path to output clipped raster.
     """
 
     gdf = gpd.read_file(in_polygon)
@@ -161,11 +194,20 @@ def clip_from_polygon(in_raster, in_polygon, out_raster):
 
 def projection(in_raster, dst_crs, out_raster):
     """
-    This function is currently not working...
-    :param in_raster:
-    :param dst_crs:
-    :param out_raster:
-    :return:
+    Reproject a raster to a new coordinate reference system.
+
+    Parameters
+    ----------
+    in_raster : str or Path
+        Path to input raster.
+    dst_crs : str or CRS
+        Target coordinate reference system.
+    out_raster : str or Path
+        Path to output reprojected raster.
+
+    Notes
+    -----
+    This function is currently not working properly.
     """
 
     with rio.open(in_raster) as src:
@@ -192,12 +234,16 @@ def projection(in_raster, dst_crs, out_raster):
 
 def resample(in_raster, out_resolution, out_raster):
     """
-    Resample input raster based on the specified out_resolution.
-    Cubic interpolation is used during the resampling step.
-    :param in_raster:
-    :param out_resolution:
-    :param out_raster:
-    :return:
+    Resample a raster to a new resolution using cubic interpolation.
+
+    Parameters
+    ----------
+    in_raster : str or Path
+        Path to input raster.
+    out_resolution : float
+        Target resolution in units of the raster's CRS.
+    out_raster : str or Path
+        Path to output resampled raster.
     """
     in_raster = Path(in_raster)
 
@@ -237,18 +283,25 @@ def resample(in_raster, out_resolution, out_raster):
 
 def polygonize(in_raster, array, mask_array, out_shapefile):
     """
-    Polygonize raster based on array and mask_array.
-    :param in_raster:
-    :param array:
-    :param mask_array:
-    :param out_shapefile:
-    :return:
+    Convert raster data to vector polygons.
 
-    :example:
-    array = read(in_raster, as_image=True).squeeze()
-    mask_array = array > 200 # brightest region in the picture
-    array = (mask + 0.0).astype('uint8')
-    polygonize(in_raster, array, mask_array, out_shapefile="/home/nilscp/tmp/shp/test.shp")
+    Parameters
+    ----------
+    in_raster : str or Path
+        Path to input raster file used for georeferencing.
+    array : ndarray
+        Array to be polygonized.
+    mask_array : ndarray of bool
+        Boolean mask array indicating which pixels to polygonize.
+    out_shapefile : str or Path
+        Path to output shapefile.
+
+    Examples
+    --------
+    >>> array = read(in_raster, as_image=True).squeeze()
+    >>> mask_array = array > 200  # brightest region in the picture
+    >>> array = (mask + 0.0).astype('uint8')
+    >>> polygonize(in_raster, array, mask_array, out_shapefile="test.shp")
     """
 
     in_meta = raster_metadata.get_profile(in_raster)
@@ -263,35 +316,51 @@ def polygonize(in_raster, array, mask_array, out_shapefile):
 
 def mask(in_raster, array, out_raster, is_image=True):
     """
-    Mask in_raster (can be different mathematical operation)  and save it to
-    a new raster.
+    Apply a mask to a raster and save the result.
 
-    :param in_raster:
-    :param array:
-    :param out_raster:
-    :param is_image:
-    :return:
+    Parameters
+    ----------
+    in_raster : str or Path
+        Path to input raster.
+    array : ndarray
+        Mask array to be applied.
+    out_raster : str or Path
+        Path to output masked raster.
+    is_image : bool, optional
+        If True (default), assumes array is in (rows, cols, bands) format.
+        If False, assumes array is in (bands, rows, cols) format.
 
-    :example:
-    # create a binary raster for the darkest region in the picture
-    array = raster.read(in_raster, as_image=True).squeeze()
-    mask_array = array < 50
-    new_array = (mask + 0.0).astype('uint8')
-    mask(in_raster, np.expand_dims(new_array, 2), out_raster="dummy.tif")
+    Examples
+    --------
+    >>> array = raster.read(in_raster, as_image=True).squeeze()
+    >>> mask_array = array < 50
+    >>> new_array = (mask + 0.0).astype('uint8')
+    >>> mask(in_raster, np.expand_dims(new_array, 2), out_raster="masked.tif")
     """
     in_meta = raster_metadata.get_profile(in_raster)
     out_meta = in_meta.copy()
     save(out_raster, array, out_meta, is_image=is_image)
 
 def true_footprint(in_raster, out_shapefile):
-
     """
-    Extract footprint of the raster (excluding the nodata).
-    Nodata is assumed to be equal to 0.
+    Extract the actual footprint of a raster by excluding nodata regions.
 
-    :param in_raster:
-    :param out_shapefile:
-    :return:
+    Parameters
+    ----------
+    in_raster : str or Path
+        Path to input raster.
+    out_shapefile : str or Path
+        Path to output shapefile containing the footprint polygon.
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+        GeoDataFrame containing the footprint polygon.
+
+    Notes
+    -----
+    Assumes nodata values are equal to 0.
+    Returns the convex hull of the non-zero regions.
     """
 
     in_raster = Path(in_raster)
@@ -311,10 +380,14 @@ def true_footprint(in_raster, out_shapefile):
 
 def footprint(in_raster, out_shapefile):
     """
-    Extract footprint of the raster (including the nodata).
-    :param in_raster:
-    :param out_shapefile:
-    :return:
+    Extract the rectangular footprint of a raster including nodata regions.
+
+    Parameters
+    ----------
+    in_raster : str or Path
+        Path to input raster.
+    out_shapefile : str or Path
+        Path to output shapefile containing the footprint polygon.
     """
     in_raster = Path(in_raster)
     in_crs = raster_metadata.get_crs(in_raster).to_wkt()
@@ -325,13 +398,22 @@ def footprint(in_raster, out_shapefile):
 
 def pad(in_raster, padding_height, padding_width, out_raster):
     """
-    Pad raster with constant nodata value (extracted from in_raster metadata).
-    The padding is specified in pixels.
-    :param in_raster: path to in_raster (str or Path)
-    :param padding_height: [padding_below, padding_above] in pixels.
-    :param padding_width: [padding_left, padding_right] in pixels.
-    :param out_raster:
-    :return:
+    Pad a raster with nodata values.
+
+    Parameters
+    ----------
+    in_raster : str or Path
+        Path to input raster.
+    padding_height : tuple of int
+        Padding in pixels for height (padding_below, padding_above).
+    padding_width : tuple of int
+        Padding in pixels for width (padding_left, padding_right).
+    out_raster : str or Path
+        Path to output padded raster.
+
+    Notes
+    -----
+    The nodata value is extracted from the input raster metadata.
     """
 
     in_raster = Path(in_raster)
@@ -356,12 +438,22 @@ def pad(in_raster, padding_height, padding_width, out_raster):
 
 def shift(in_raster, x_shift, y_shift, out_raster):
     """
-    Need to make it more general, where I can specify shift, rotation, scale.
-    :param in_raster:
-    :param x_shift: (in meters)
-    :param y_shift: (in meters)
-    :param out_raster:
-    :return:
+    Shift a raster by specified x and y offsets.
+
+    Parameters
+    ----------
+    in_raster : str or Path
+        Path to input raster.
+    x_shift : float
+        Shift in x direction (in meters).
+    y_shift : float
+        Shift in y direction (in meters).
+    out_raster : str or Path
+        Path to output shifted raster.
+
+    Notes
+    -----
+    Future improvements may include support for rotation and scaling.
     """
 
     in_raster = Path(in_raster)
@@ -386,12 +478,25 @@ def shift(in_raster, x_shift, y_shift, out_raster):
 
 def graticule(in_raster, block_width, block_height, out_shapefile, stride=(0, 0)):
     """
-    replace generate_graticule_from_raster
-    :param in_raster:
-    :param block_width:
-    :param block_height:
-    :param geopackage:
-    :return:
+    Generate a grid of polygons covering the raster extent.
+
+    Parameters
+    ----------
+    in_raster : str or Path
+        Path to input raster.
+    block_width : int
+        Width of each grid cell in pixels.
+    block_height : int
+        Height of each grid cell in pixels.
+    out_shapefile : str or Path
+        Path to output shapefile containing the grid polygons.
+    stride : tuple of int, optional
+        (stride_x, stride_y) spacing between grid cells, default (0, 0).
+
+    Returns
+    -------
+    tuple
+        (pandas.DataFrame, geopandas.GeoDataFrame) containing grid metadata and geometries.
     """
     in_raster = Path(in_raster)
     print("...Generate graticule for raster " + in_raster.name +
@@ -440,13 +545,28 @@ def graticule(in_raster, block_width, block_height, out_shapefile, stride=(0, 0)
 
 def tile_windows(in_raster, block_width=512, block_height=512, stride=(0, 0)):
     """
-    Tile the rio_dataset raster (rasterio format) to a desired number of blocks
-    having specified width and height.
+    Generate windows for tiling a raster into blocks.
 
-    :param rio_dataset: rasterio raster dataset
-    :param width: width of blocks (multiplier of 16 is advised, e.g., 512)
-    :param height: height of blocks (multiplier of 16 is advised, e.g., 512)
-    :returns: tile_window, tile_transform: list of rasterio windows and transforms
+    Parameters
+    ----------
+    in_raster : str or Path
+        Path to input raster.
+    block_width : int, optional
+        Width of each tile in pixels, default 512.
+    block_height : int, optional
+        Height of each tile in pixels, default 512.
+    stride : tuple of int, optional
+        (stride_x, stride_y) spacing between tiles, default (0, 0).
+
+    Returns
+    -------
+    tuple
+        (list of Window, list of Affine, list of bounds) containing tile windows,
+        transforms, and bounds.
+
+    Notes
+    -----
+    Block dimensions should ideally be multiples of 16 for optimal performance.
     """
 
     nwidth = raster_metadata.get_width(in_raster)
@@ -490,6 +610,25 @@ def tile_windows(in_raster, block_width=512, block_height=512, stride=(0, 0)):
 
     return tile_window, tile_transform, tile_bounds
 def tile(in_raster, in_pkl, block_width, block_height):
+    """
+    Create image tiles from a raster file based on tiling metadata.
+
+    Parameters
+    ----------
+    in_raster : str or Path
+        Path to input raster file.
+    in_pkl : str or Path
+        Path to pickle file containing tiling metadata (generated by graticule function).
+    block_width : int
+        Width of each tile in pixels.
+    block_height : int
+        Height of each tile in pixels.
+
+    Notes
+    -----
+    Creates both TIFF and PNG versions of each tile in an 'images' subdirectory.
+    Handles edge cases by padding tiles that would extend beyond the raster bounds.
+    """
 
     print("...Tiling original image into small image patches...")
 
@@ -526,6 +665,29 @@ def tile(in_raster, in_pkl, block_width, block_height):
         raster_convert.tiff_to_png(filename_tif, filename_png)
 
 def tile_from_dataframe(dataframe, dataset_directory, block_width, block_height):
+    """
+    Create image tiles from multiple rasters based on DataFrame specifications.
+
+    Parameters
+    ----------
+    dataframe : pandas.DataFrame
+        DataFrame containing tiling metadata for multiple rasters.
+        Must include columns: dataset, raster_ap, file_name, rwindows, transform.
+    dataset_directory : str or Path
+        Base directory where tiled images will be saved.
+    block_width : int
+        Width of each tile in pixels.
+    block_height : int
+        Height of each tile in pixels.
+
+    Notes
+    -----
+    - Creates both TIFF and PNG versions of each tile.
+    - Organizes tiles into subdirectories by dataset.
+    - Skips tiling if the number of existing tiles matches the DataFrame specifications.
+    - Handles edge cases by padding tiles that would extend beyond the raster bounds.
+    """
+
     print("...Tiling original image into small image patches...")
 
     dataset_directory = Path(dataset_directory)

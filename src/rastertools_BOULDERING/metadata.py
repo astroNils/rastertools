@@ -2,9 +2,22 @@ import rasterio as rio
 
 def get_pix_coordinates(in_raster, bbox):
     """
-    :param in_raster: path to raster.
-    :param bbox: [xmin, ymin, xmax, ymax]
-    :return:
+    Get pixel coordinates from geographic coordinates.
+
+    Parameters
+    ----------
+    in_raster : str or Path
+        Path to the input raster file.
+    bbox : list of float
+        Bounding box coordinates [xmin, ymin, xmax, ymax] in the raster's CRS.
+
+    Returns
+    -------
+    tuple
+        Pixel coordinates as (col_ul, row_ul, width, height) where:
+        - col_ul, row_ul: Upper-left pixel coordinates
+        - width: Number of pixels in x direction
+        - height: Number of pixels in y direction
     """
     with rio.open(in_raster) as rio_dataset:
         row_ul, col_ul = rio_dataset.index(bbox[0], bbox[3])
