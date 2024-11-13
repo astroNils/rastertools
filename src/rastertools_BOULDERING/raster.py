@@ -648,13 +648,12 @@ def tile(in_raster, in_pkl, block_width, block_height):
 
         # edge cases (in the East, and South, the extent can be beigger than the actual raster)
         # read_raster will then return an array with not the dimension
-        h, w = arr.squeeze().shape
+        c, h, w = arr.shape
 
         if (h, w) != (block_height, block_width):
-            arr = np.pad(arr.squeeze(),
-                         [(0, block_height - h), (0, block_width - w)],
-                         mode='constant', constant_values=0)
-            arr = np.expand_dims(arr, axis=0)
+            arr = np.pad(arr,
+                        [(0, 0), (0, block_height - h), (0, block_width - w)],
+                        mode='constant', constant_values=0)
 
         filename_tif = image_directory / row.file_name.replace(".png", ".tif")
         filename_png = image_directory / row.file_name
