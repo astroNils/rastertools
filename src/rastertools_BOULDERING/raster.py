@@ -27,9 +27,9 @@ def read(in_raster, bands=None, bbox=None, as_image=False):
         Path to the input raster file.
     bands : int or list of int, optional
         Band(s) to read (band count starts from 1). If None, all bands are read.
-    bbox : list or rasterio.windows.Window, optional
-        Either a bounding box [xmin, ymin, xmax, ymax] or a rasterio Window object
-        defining the area to read.
+    bbox : list, rasterio.windows.Window, or shapely.geometry.base.BaseGeometry, optional
+        Either a bounding box [xmin, ymin, xmax, ymax], a rasterio Window object,
+        or a shapely geometry defining the area to read.
     as_image : bool, optional
         If True, reshapes the array to (rows, cols, bands) format.
         If False (default), keeps (bands, rows, cols) format.
@@ -53,6 +53,10 @@ def read(in_raster, bands=None, bbox=None, as_image=False):
             # if bbox is provided as indexes
             if type(bbox) == rio.windows.Window:
                 array = rio_dataset.read(bands, window=bbox)
+
+            # if bbox is a shapely geometry
+            elif isinstance(bbox, shapely.geometry.base.BaseGeometry):
+                array, _ = rio_mask(rio_dataset, [bbox], crop=True, indexes=bands)
 
             else:
                 # if a bbox with coordinates are specified, convert to pixel
